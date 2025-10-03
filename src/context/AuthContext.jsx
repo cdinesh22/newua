@@ -9,81 +9,157 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let mounted = true
+    
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!mounted) return
-      if (session?.user) {
-        // You can enrich with profile/role via another query if you add a profiles table
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          role: session.user.user_metadata?.role || 'user',
-          ...session.user,
-        })
-      } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
+        
+        if (session?.user) {
+          // Get user profile from our users table
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: profile?.name || session.user.user_metadata?.name,
+            phone: profile?.phone || session.user.user_metadata?.phone,
+            role: profile?.role || session.user.user_metadata?.role || 'pilgrim',
+            ...session.user,
+          })
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
         setUser(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          role: session.user.user_metadata?.role || 'user',
-          ...session.user,
-        })
-      } else {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+      
+      try {
+        if (session?.user) {
+          // Get user profile from our users table
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: profile?.name || session.user.user_metadata?.name,
+            phone: profile?.phone || session.user.user_metadata?.phone,
+            role: profile?.role || session.user.user_metadata?.role || 'pilgrim',
+            ...session.user,
+          })
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error)
         setUser(null)
       }
     })
 
     init()
-    return () => { mounted = false; authListener.subscription.unsubscribe() }
+    return () => { 
+      mounted = false
+      authListener.subscription.unsubscribe() 
+    }
   }, [])
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    const sessionUser = data.user
-    const u = {
-      id: sessionUser.id,
-      email: sessionUser.email,
-      role: sessionUser.user_metadata?.role || 'user',
-      ...sessionUser,
+    
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single()
+    
+    const userData = {
+      id: data.user.id,
+      email: data.user.email,
+      name: profile?.name || data.user.user_metadata?.name,
+      phone: profile?.phone || data.user.user_metadata?.phone,
+      role: profile?.role || data.user.user_metadata?.role || 'pilgrim',
+      ...data.user,
     }
-    setUser(u)
-    return u
+    
+    setUser(userData)
+    return userData
   }
 
   const register = async (payload) => {
-    const { email, password, name, phone } = payload
+    const { email, password, name, phone, role = 'pilgrim' } = payload
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name, phone, role: 'user' }
+        data: { name, phone, role }
       }
     })
     if (error) throw error
-    const sessionUser = data.user
-    const u = sessionUser ? {
-      id: sessionUser.id,
-      email: sessionUser.email,
-      role: sessionUser.user_metadata?.role || 'user',
-      ...sessionUser,
+    
+    const userData = data.user ? {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.user_metadata?.name || name,
+      phone: data.user.user_metadata?.phone || phone,
+      role: data.user.user_metadata?.role || role,
+      ...data.user,
     } : null
-    setUser(u)
-    return u
+    
+    setUser(userData)
+    return userData
   }
 
-  const logout = () => {
-    supabase.auth.signOut()
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
     setUser(null)
   }
 
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading])
+  const updateProfile = async (updates) => {
+    if (!user) throw new Error('No user logged in')
+    
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', user.id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    setUser(prev => ({
+      ...prev,
+      ...data
+    }))
+    
+    return data
+  }
+
+  const value = useMemo(() => ({ 
+    user, 
+    loading, 
+    login, 
+    register, 
+    logout, 
+    updateProfile 
+  }), [user, loading])
 
   return (
     <AuthContext.Provider value={value}>
@@ -93,5 +169,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }

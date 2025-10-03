@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
-import api from '../api/client'
+import { getTemplesList, getTempleDetails, getSimulation, estimateWaitingTime } from '../services/simulation'
 import HeatmapMap from '../components/HeatmapMap'
 import AlertsBanner from '../components/AlertsBanner'
 import { Skeleton, SkeletonText } from '../components/Skeleton'
@@ -128,18 +128,13 @@ export default function Simulation() {
   }
 
   useEffect(() => {
-    api.get('/api/temples').then(res => {
-      const list = res.data.data.temples || []
+    getTemplesList().then(list => {
       setTemples(list)
-      // Restore last selected temple if available
       const savedId = localStorage.getItem('sim_selectedTempleId')
       const match = savedId ? list.find(t => t._id === savedId) : null
-      if (match) {
-        setSelectedTemple(match)
-      } else if (list.length) {
-        setSelectedTemple(list[0])
-      }
-    })
+      if (match) setSelectedTemple(match)
+      else if (list.length) setSelectedTemple(list[0])
+    }).catch(()=>{})
   }, [])
 
   useEffect(() => {
@@ -155,8 +150,8 @@ export default function Simulation() {
         } catch (_) {}
         return selectedDate
       })()
-      api.get(`/api/simulation/${selectedTemple._id}`, { params: { date: isoDate } }).then(res => {
-        if (!cancelled) setData(res.data.data)
+      getSimulation(selectedTemple._id, isoDate).then(sim => {
+        if (!cancelled) setData(sim)
       }).catch(()=>{})
     }
     fetchData()
@@ -164,37 +159,7 @@ export default function Simulation() {
     return () => { cancelled = true; clearInterval(id) }
   }, [selectedTemple, selectedDate])
 
-  // Subscribe to real-time status updates via SSE when a temple is selected
-  useEffect(() => {
-    if (!selectedTemple) return
-    const baseURL = api?.defaults?.baseURL?.replace(/\/$/, '') || ''
-    const url = `${baseURL}/api/temples/${selectedTemple._id}/stream`
-    let es
-    try {
-      es = new EventSource(url, { withCredentials: false })
-      es.addEventListener('status', (evt) => {
-        try {
-          const status = JSON.parse(evt.data)
-          setData((prev) => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              currentStatus: {
-                ...prev.currentStatus,
-                ...status,
-              },
-            }
-          })
-        } catch (_) { /* ignore bad payload */ }
-      })
-    } catch (_) {
-      // Ignore EventSource init errors (fallback is polling above)
-    }
-
-    return () => {
-      try { es && es.close() } catch (_) { /* ignore */ }
-    }
-  }, [selectedTemple])
+  // Removed SSE dependency; polling above keeps data relatively fresh.
 
   // Fetch full temple details when selection changes (description, timings, rules, contacts, facilities)
   useEffect(() => {
@@ -202,8 +167,8 @@ export default function Simulation() {
     let cancelled = false
     // Persist selected temple
     localStorage.setItem('sim_selectedTempleId', selectedTemple._id)
-    api.get(`/api/temples/${selectedTemple._id}`).then(res => {
-      if (!cancelled) setTempleDetails(res.data.data.temple)
+    getTempleDetails(selectedTemple._id).then(res => {
+      if (!cancelled) setTempleDetails(res)
     }).catch(()=>{})
     return () => { cancelled = true }
   }, [selectedTemple])
@@ -222,9 +187,8 @@ export default function Simulation() {
       slotDurationMinutes: Number(slotDuration),
       lanes: 2,
     }
-    api.post('/api/waiting-times/estimate', payload).then(res => {
-      setWaitEstimate(res?.data?.data || null)
-    }).catch(()=> setWaitEstimate(null))
+    const est = estimateWaitingTime(payload)
+    setWaitEstimate(est)
   }, [data])
 
   return (

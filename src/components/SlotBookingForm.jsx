@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../api/client'
+import { getTemples } from '../services/temples'
 
 export default function SlotBookingForm({ onBooked }) {
   const [temples, setTemples] = useState([])
@@ -12,16 +13,23 @@ export default function SlotBookingForm({ onBooked }) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    api.get('/api/temples').then(res => setTemples(res.data.data.temples))
+    getTemples().then(list => setTemples(list)).catch(()=>{})
   }, [])
 
   useEffect(() => {
     if (!templeId) return
-    api.get('/api/slots', { params: { temple: templeId, date } }).then(res => {
-      const grouped = res.data.data.slots
-      const list = Object.entries(grouped).flatMap(([d, arr]) => arr.map(a => ({ ...a, date: d })))
+    api.getSlots(templeId, date).then(rows => {
+      // Map DB rows to UI shape expected by buttons
+      const list = (rows || []).map(r => ({
+        id: r.id,
+        date: r.date,
+        startTime: r.start_time,
+        endTime: r.end_time,
+        availableSpots: (r.available_spots ?? r.available) || 0,
+        isBookable: r.is_available !== false,
+      }))
       setSlots(list)
-    })
+    }).catch(()=> setSlots([]))
   }, [templeId, date])
 
   const setVisitorField = (i, field, value) => {
@@ -43,15 +51,16 @@ export default function SlotBookingForm({ onBooked }) {
     setLoading(true)
     try {
       const payload = {
-        slotId: selectedSlot.id,
-        visitorsCount,
+        slot_id: selectedSlot.id,
+        temple_id: templeId,
+        visitors_count: visitorsCount,
         visitors
       }
-      const res = await api.post('/api/bookings', payload)
-      onBooked?.(res.data.data.booking)
+      const booking = await api.createBooking(payload)
+      onBooked?.(booking)
       alert('Booking successful!')
     } catch (e) {
-      alert(e?.response?.data?.message || 'Booking failed')
+      alert(e?.message || 'Booking failed')
     } finally { setLoading(false) }
   }
 

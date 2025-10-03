@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import api from '../api/client'
 
 // Floating AI Tutor widget that talks to backend `/api/assistant` routes.
 // Uses SSE streaming when available and falls back to a simple POST.
+// Frontend-only fallback version without backend calls.
 export default function AITutor({ templeId, lang }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -12,12 +12,6 @@ export default function AITutor({ templeId, lang }) {
     { role: 'assistant', text: 'Hi! I\'m your ॐ ChatBot. Ask me anything about booking, slots, timings, heatmaps, or using this site.' }
   ])
   const scrollRef = useRef(null)
-
-  const baseURL = useMemo(() => {
-    // Ensure trailing slash not duplicated
-    const url = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000').replace(/\/+$/, '')
-    return url
-  }, [])
 
   // No auto-open: the launcher button remains visible and constant.
 
@@ -29,82 +23,47 @@ export default function AITutor({ templeId, lang }) {
     }
   }, [open, messages])
 
+  function localAnswer(question) {
+    const q = question.toLowerCase()
+    // Very lightweight intent rules
+    if (q.includes('book') || q.includes('darshan')) {
+      return 'To book a slot, go to the Book page and choose your temple. We link to official portals when available.'
+    }
+    if (q.includes('time') || q.includes('timing') || q.includes('open')) {
+      return 'Temples list their Open/Close and Slot duration in the temple details panel on Simulation and Book pages.'
+    }
+    if (q.includes('wait') || q.includes('queue') || q.includes('crowd')) {
+      return 'The waiting time is estimated from current visitors and capacity. Check Simulation for live trends and heatmap.'
+    }
+    if (q.includes('map') || q.includes('heatmap')) {
+      return 'Use the Simulation page to view the live heatmap, areas, and facilities. You can toggle layers in the legend.'
+    }
+    if (q.includes('language') || q.includes('hindi') || q.includes('english')) {
+      return 'Use the language selector in the header to switch languages across the site.'
+    }
+    if (q.includes('contact') || q.includes('help')) {
+      return 'Use the Contact page to send us a message. For emergencies, please use the temple\'s listed contacts.'
+    }
+    return 'I\'m here to help with bookings, timings, waiting time, and navigation tips. Try asking about "booking", "waiting time", or "heatmap".'
+  }
+
   async function ask(question) {
     if (!question?.trim()) return
 
     // Push user message
     setMessages(prev => [...prev, { role: 'user', text: question }, { role: 'assistant', text: '' }])
     setBusy(true)
-
-    const q = encodeURIComponent(question)
-    const t = templeId ? `&templeId=${encodeURIComponent(String(templeId))}` : ''
-    const l = lang ? `&lang=${encodeURIComponent(String(lang))}` : ''
-
-    // Try SSE streaming first
-    let es
-    try {
-      const streamUrl = `${baseURL}/api/assistant/stream?question=${q}${t}${l}`
-      es = new EventSource(streamUrl)
-
-      es.onmessage = (evt) => {
-        try {
-          const data = JSON.parse(evt.data || '{}')
-          const text = data?.text || ''
-          if (text) {
-            setMessages(prev => {
-              const clone = [...prev]
-              // append to the last assistant chunk
-              const lastIdx = clone.length - 1
-              if (lastIdx >= 0 && clone[lastIdx].role === 'assistant') {
-                clone[lastIdx] = { role: 'assistant', text: (clone[lastIdx].text || '') + text }
-              }
-              return clone
-            })
-          }
-        } catch (_) {}
+    // Local instant response (no backend)
+    const answer = localAnswer(question)
+    setMessages(prev => {
+      const clone = [...prev]
+      const lastIdx = clone.length - 1
+      if (lastIdx >= 0 && clone[lastIdx].role === 'assistant') {
+        clone[lastIdx] = { role: 'assistant', text: answer }
       }
-
-      es.addEventListener('done', () => {
-        es.close()
-        setBusy(false)
-      })
-
-      es.onerror = () => {
-        try { es.close() } catch (_) {}
-        // fallback to POST if SSE fails
-        fallbackPost(question)
-      }
-    } catch (_) {
-      try { es && es.close() } catch (_) {}
-      // Fallback to POST
-      fallbackPost(question)
-    }
-  }
-
-  async function fallbackPost(question) {
-    try {
-      const { data } = await api.post('/assistant', { question, templeId, lang })
-      const text = data?.text || 'Sorry, no response.'
-      setMessages(prev => {
-        const clone = [...prev]
-        const lastIdx = clone.length - 1
-        if (lastIdx >= 0 && clone[lastIdx].role === 'assistant') {
-          clone[lastIdx] = { role: 'assistant', text }
-        }
-        return clone
-      })
-    } catch (err) {
-      setMessages(prev => {
-        const clone = [...prev]
-        const lastIdx = clone.length - 1
-        if (lastIdx >= 0 && clone[lastIdx].role === 'assistant') {
-          clone[lastIdx] = { role: 'assistant', text: 'Assistant error. Please try again later.' }
-        }
-        return clone
-      })
-    } finally {
-      setBusy(false)
-    }
+      return clone
+    })
+    setBusy(false)
   }
 
   function onSubmit(e) {
