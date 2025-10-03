@@ -1,0 +1,464 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #F97316;
+  --india-saffron: #FF9933;
+  --india-green: #138808;
+}
+
+/* Prevent horizontal overflow across the app */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+#root {
+  overflow-x: hidden;
+}
+
+body {
+  @apply text-gray-800;
+}
+
+/* India tricolor strip */
+.tri-bar {
+  background: linear-gradient(90deg, var(--india-saffron) 0 33.33%, #ffffff 33.33% 66.66%, var(--india-green) 66.66% 100%);
+}
+
+/* India themed buttons */
+.btn-india {
+  @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md font-medium text-white shadow-sm ind-cta;
+  background: linear-gradient(180deg, var(--india-saffron), #fb8a1c);
+}
+.btn-india:hover { filter: brightness(1.03); }
+
+.btn-india-outline {
+  @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md font-medium text-[color:var(--india-green)] border;
+  border-color: rgba(19, 136, 8, 0.35);
+  background-color: rgba(19, 136, 8, 0.06);
+}
+.btn-india-outline:hover { background-color: rgba(19, 136, 8, 0.12); }
+
+/* Page enter transition */
+.page-enter { animation: page-enter 520ms ease-out both; }
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(6px); filter: saturate(0.96) blur(1px); }
+  100% { opacity: 1; transform: translateY(0); filter: none; }
+}
+
+/* Decorative India section separator */
+.india-section {
+  position: relative;
+  padding-bottom: .5rem;
+}
+.india-section::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--india-saffron) 0%, #ffffff 50%, var(--india-green) 100%);
+  border-radius: 2px;
+  opacity: .65;
+}
+
+/* Pulsing halo for high/critical density markers */
+.tcm-pulse-wrapper {
+  pointer-events: none;
+}
+
+.tcm-pulse {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: var(--pulse-color);
+  opacity: .35;
+  position: relative;
+}
+
+.tcm-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid currentColor;
+  color: var(--pulse-color);
+  animation: tcm-pulse 1.6s ease-out infinite;
+  opacity: .6;
+  transform-origin: center;
+}
+
+@keyframes tcm-pulse {
+  0% {
+    transform: scale(1);
+    opacity: .6;
+  }
+  70% {
+    transform: scale(2);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* India-inspired transitions & animations (2nd set) */
+/* Global transition utility */
+.ind-trans {
+  transition: all 220ms ease-in-out;
+}
+
+/* Buttons/CTAs: subtle glow + lift */
+.ind-cta {
+  transition: transform 200ms ease, box-shadow 240ms ease, filter 200ms ease;
+  will-change: transform, box-shadow, filter;
+}
+.ind-cta:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.04);
+  box-shadow: 0 10px 28px rgba(255, 153, 51, 0.35);
+}
+.ind-cta:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgba(255, 153, 51, 0.28);
+}
+.ind-cta:focus-visible {
+  outline: 3px solid rgba(212, 175, 55, 0.65);
+  outline-offset: 2px;
+}
+
+/* Cards: micro-elevation */
+.ind-card {
+  transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
+  will-change: transform, box-shadow, border-color;
+}
+.ind-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  border-color: rgba(212, 175, 55, 0.28);
+}
+
+/* Sidebar/nav items */
+.ind-nav-item {
+  transition: color 160ms ease, background-color 160ms ease, font-weight 160ms ease;
+}
+.ind-nav-item:hover {
+  color: #003366;
+  background-color: rgba(255, 153, 51, 0.08);
+}
+
+/* Entrance animations */
+@keyframes ind-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ind-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ind-anim-fade-up { animation: ind-fade-up 520ms ease-out both; }
+.ind-anim-fade { animation: ind-fade 420ms ease-out both; }
+
+/* Micro-animations */
+@keyframes ind-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@keyframes ind-rotate-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.ind-anim-breathe { animation: ind-breathe 2.8s ease-in-out infinite; transform-origin: center; }
+.ind-anim-rotate-slow { animation: ind-rotate-slow 6s linear infinite; transform-origin: center; }
+
+/* Hover ripple highlight for rows */
+.ind-hover-highlight { position: relative; overflow: hidden; }
+.ind-hover-highlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120px 40px at var(--mx, 50%) var(--my, 50%), rgba(255, 153, 51, 0.06), transparent 60%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.ind-hover-highlight:hover::after { opacity: 1; }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ind-trans,
+  .ind-cta,
+  .ind-card,
+  .ind-nav-item,
+  .ind-anim-fade-up,
+  .ind-anim-fade,
+  .ind-anim-breathe,
+  .ind-anim-rotate-slow {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================= */
+/* Glassmorphism & Motion Addons */
+/* ============================= */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.16);
+  --glass-bg-strong: rgba(255, 255, 255, 0.26);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  --glass-shadow-hover: 0 16px 40px rgba(0,0,0,0.22);
+  --glass-blur: 12px;
+}
+
+/* Gradient border helper (saffron-white-green) */
+.ind-gradient-border {
+  position: relative;
+  overflow: hidden; /* clip the ::before gradient to avoid 1px overflow causing right gap */
+}
+.ind-gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--india-saffron), #ffffff 40%, var(--india-green));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Glass container */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Glass card with hover tilt and glow */
+.glass-card {
+  @apply rounded-xl;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: var(--glass-shadow);
+  transition: transform 320ms ease, box-shadow 320ms ease, border-color 320ms ease;
+}
+.glass-card:hover {
+  transform: translateY(-2px) rotateX(0.6deg) rotateY(-0.6deg);
+  box-shadow: var(--glass-shadow-hover);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* Glass navigation (sidebar) */
+.glass-nav {
+  background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.12));
+  backdrop-filter: blur(calc(var(--glass-blur) + 2px));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 2px));
+  border-right: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+.glass-nav .ind-nav-item {
+  position: relative;
+}
+.glass-nav .ind-nav-item::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0px;
+  background: linear-gradient(180deg, var(--india-saffron), var(--india-green));
+  opacity: 0.85;
+  transition: width 240ms ease;
+  border-radius: 2px;
+}
+.glass-nav .ind-nav-item:hover::after,
+.glass-nav .ind-nav-item[aria-current="page"]::after {
+  width: 4px;
+}
+
+/* Glass buttons */
+.glass-btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium ind-cta;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.10));
+  border: 1px solid rgba(255,255,255,0.35);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  color: #1f2937; /* gray-800 */
+  transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease, background 260ms ease;
+}
+.glass-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12));
+}
+.glass-btn:active { transform: translateY(0) scale(0.995); }
+.glass-btn:focus-visible {
+  outline: 3px solid rgba(255, 153, 51, 0.55);
+  outline-offset: 2px;
+}
+
+/* Make existing India buttons more glassy and animated */
+.btn-india {
+  border: 1px solid rgba(255,255,255,0.35);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: 12px;
+}
+.btn-india:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 14px 40px rgba(255, 153, 51, 0.35);
+}
+
+.btn-india-outline {
+  border-radius: 12px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 6px 18px rgba(19, 136, 8, 0.12);
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+.btn-india-outline:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 12px 26px rgba(19, 136, 8, 0.22);
+}
+
+/* Page transitions: fade-in and slide-up */
+.animate-fade-in { animation: ind-fade 480ms ease-out both; }
+.animate-slide-up { animation: ind-fade-up 520ms cubic-bezier(.2,.8,.2,1) both; }
+
+/* Scope-based glass transformation: make white cards glassy automatically */
+.glass-scope .bg-white {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+.glass-scope .shadow { box-shadow: var(--glass-shadow) !important; }
+.glass-scope .border { border-color: rgba(255,255,255,0.45) !important; }
+
+/* Card hover glow and subtle tilt for common card containers */
+.glass-scope .rounded:hover {
+  box-shadow: var(--glass-shadow-hover) !important;
+}
+
+/* Micro-interactions for progress bars */
+.tcm-progress .tcm-progress-bar {
+  transition: width 500ms ease-out, background-color 400ms ease, box-shadow 400ms ease;
+}
+.tcm-progress.increase .tcm-progress-bar { box-shadow: 0 0 20px rgba(19,136,8,0.25); }
+.tcm-progress.high .tcm-progress-bar { box-shadow: 0 0 24px rgba(239,68,68,0.28); }
+
+
+/* ============================= */
+/* Spiritual Animated Background */
+/* ============================= */
+
+/* Animated saffron→white→green gradient with subtle motion */
+body {
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--india-saffron) 88%, white) 0%,
+    #ffffff 50%,
+    color-mix(in oklab, var(--india-green) 90%, white) 100%
+  );
+  background-attachment: fixed;
+  background-size: 160% 160%;
+  animation: tcm-gradient-shift 22s ease-in-out infinite;
+}
+
+@keyframes tcm-gradient-shift {
+  0% { background-position: 0% 50%; filter: saturate(0.98); }
+  50% { background-position: 100% 50%; filter: saturate(1.02); }
+  100% { background-position: 0% 50%; filter: saturate(0.98); }
+}
+
+/* Faint mandala/temple motif overlay (very low opacity) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.25) 0, transparent 40%),
+    url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='240'%20height='240'%20viewBox='0%200%20240%20240'%3E%3Cg%20fill='none'%20stroke='rgba(0,0,0,0.10)'%20stroke-width='0.6'%3E%3Ccircle%20cx='120'%20cy='120'%20r='80'/%3E%3Ccircle%20cx='120'%20cy='120'%20r='56'/%3E%3Cpath%20d='M120%2036%20L132%2072%20L168%2072%20L138%2096%20L150%20132%20L120%20110%20L90%20132%20L102%2096%20L72%2072%20L108%2072%20Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: auto, 240px 240px;
+  background-repeat: no-repeat, repeat;
+  background-position: 70% 20%, center;
+  mix-blend-mode: soft-light;
+}
+
+/* Gentle moving light sweep to bring the background alive */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -10% -20%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(45% 35% at var(--lx, 10%) var(--ly, 20%), rgba(255,255,255,0.18), transparent 70%);
+  animation: tcm-light-sweep 28s ease-in-out infinite;
+}
+
+@keyframes tcm-light-sweep {
+  0%   { --lx: 10%;  --ly: 20%; }
+  25%  { --lx: 85%;  --ly: 30%; }
+  50%  { --lx: 70%;  --ly: 80%; }
+  75%  { --lx: 20%;  --ly: 70%; }
+  100% { --lx: 10%;  --ly: 20%; }
+}
+
+/* Ensure content layers render above background overlays */
+html, body, #root { position: relative; }
+
+/* High readability tweaks on glass surfaces */
+.glass, .glass-card, .glass-btn, .glass-nav {
+  color: #1f2937; /* gray-800 */
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* Reduced motion: minimize animations for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none !important; background-size: cover; }
+  body::after { animation: none !important; display: none; }
+}
+
+
+/* ============================= */
+/* Floating Om Click Particles   */
+/* ============================= */
+
+.om-emit {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+  pointer-events: none;
+  color: var(--india-saffron);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(249, 115, 22, 0.35), 0 0 6px rgba(249, 115, 22, 0.15);
+  transform: translate(-50%, -50%);
+  opacity: 0.92;
+  animation: om-float var(--dur, 900ms) ease-out forwards;
+}
+
+@keyframes om-float {
+  0% {
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + 0px)) scale(var(--scale, 1)) rotate(var(--rot, 0deg));
+    opacity: 0.92;
+    filter: saturate(1.05) brightness(1.02);
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 64px)) scale(calc(var(--scale, 1) * 1.18)) rotate(calc(var(--rot, 0deg) + var(--spin, 24deg)));
+    opacity: 0;
+    filter: saturate(1);
+  }
+}
+
