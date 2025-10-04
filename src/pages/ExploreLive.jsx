@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { useLang } from '../context/LanguageContext'
+import { getTemplesList } from '../services/simulation'
+import TempleRealtimePanel from '../components/TempleRealtimePanel'
 
 const gujaratTemples = [
   { name: 'Somnath Temple', img: '/images/somnath-1.svg', desc: 'Jyotirlinga on the Arabian Sea coast, revered for its spiritual significance.', links: [
@@ -87,6 +90,32 @@ function Section({ title, temples }) {
 
 export default function ExploreLive() {
   const { t } = useLang()
+  const [temples, setTemples] = useState([])
+  const [selectedTemple, setSelectedTemple] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+
+  const performTempleSearch = () => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) { setSearchResults([]); return }
+    const results = (temples || []).filter(t => {
+      const name = (t.name || '').toLowerCase()
+      const city = (t.location?.city || '').toLowerCase()
+      const state = (t.location?.state || '').toLowerCase()
+      return name.includes(q) || city.includes(q) || state.includes(q)
+    })
+    setSearchResults(results.slice(0, 8))
+    if (results.length === 1) {
+      setSelectedTemple(results[0])
+    }
+  }
+
+  useEffect(() => {
+    getTemplesList().then(list => {
+      setTemples(list)
+      if (list.length) setSelectedTemple(list[0])
+    }).catch(()=>{})
+  }, [])
 
   const ytEmbed = (src) => (
     <div className="relative w-full" style={{paddingTop:'56.25%'}}>
@@ -109,6 +138,52 @@ export default function ExploreLive() {
              style={{ background: 'linear-gradient(90deg, rgba(255,153,51,0.10) 0%, rgba(255,255,255,0.12) 50%, rgba(19,136,8,0.10) 100%)' }}>
           <div className="text-2xl font-bold text-saffron-800">{t('nav_live')}</div>
           <div className="text-gray-700">Quick links to live darshan, official websites, and YouTube streams.</div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Live Realtime Updates</h2>
+          <p className="text-sm text-gray-600 mb-4">Official timings, current crowd and slot availability</p>
+          <div className="flex items-center gap-2 relative mb-4">
+            <input
+              type="text"
+              placeholder={t('search_temples')}
+              className="p-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              value={searchTerm}
+              onChange={(e)=> setSearchTerm(e.target.value)}
+              onKeyDown={(e)=> { if (e.key === 'Enter') performTempleSearch() }}
+            />
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+              onClick={performTempleSearch}
+              aria-label="Search temples"
+            >
+              {t('search')}
+            </button>
+            <select className="p-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" value={selectedTemple?._id||''} onChange={e=>setSelectedTemple(temples.find(t=>t._id===e.target.value))}>
+              <option value="">Select Temple</option>
+              {temples.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+            </select>
+            {searchResults && searchResults.length > 0 ? (
+              <div className="absolute right-0 top-full mt-1 w-72 max-w-[80vw] z-10 bg-white border rounded-lg shadow-lg overflow-hidden">
+                <ul className="max-h-64 overflow-auto">
+                  {searchResults.map(r => (
+                    <li key={r._id}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50"
+                        onClick={() => { setSelectedTemple(r); setSearchResults([]) }}
+                      >
+                        <div className="font-medium">{r.name}</div>
+                        <div className="text-xs text-gray-500">{r.location?.city}{r.location?.state ? `, ${r.location.state}` : ''}</div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+          {selectedTemple && <TempleRealtimePanel templeId={selectedTemple._id} />}
         </div>
 
         {/* Featured inline embeds */}
