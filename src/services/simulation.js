@@ -53,9 +53,21 @@ export async function getSimulation(templeId, isoDate) {
     .maybeSingle()
 
   // Always ensure we have temple info
-  const temple = await getTempleDetails(templeId)
+  let temple
+  try {
+    temple = await getTempleDetails(templeId)
+  } catch (e) {
+    console.error(`Failed to fetch details for temple ${templeId}:`, e)
+    // Re-throw or return a specific error structure if the UI should handle this case
+    throw new Error(`Could not load temple details. Simulation cannot proceed.`)
+  }
 
-  if (!data || error) {
+  if (error && error.code !== 'PGRST116') { // PGRST116: "The result contains 0 rows"
+    console.error(`Error fetching simulation data for temple ${templeId}, date ${isoDate}:`, error)
+    // Optional: Decide if you should still synthesize data or throw
+  }
+
+  if (!data) {
     // Fallback: synthesize a reasonable snapshot using temple capacity
     const cap = Number(temple?.capacity?.maxVisitorsPerSlot || 0)
     const base = Math.max(50, Math.round(cap * 0.6))

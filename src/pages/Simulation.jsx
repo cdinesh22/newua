@@ -7,13 +7,12 @@ import { Skeleton, SkeletonText } from '../components/Skeleton'
 import CrowdProgress from '../components/CrowdProgress'
 import TempleRealtimePanel from '../components/TempleRealtimePanel'
 import { useLang } from '../context/LanguageContext'
-// Minimal inline SVG trend (sparkline) replaces heavy charting libs
 
 function MiniTrend({ hourly }) {
   const width = 420
   const height = 120
   const padding = 8
-  const [hover, setHover] = useState(null) // { x, y, i, exp, act }
+  const [hover, setHover] = useState(null)
   const points = (hourly || []).map((h, i) => ({ i, hour: h.hour, exp: h.expectedVisitors || 0, act: h.actualVisitors || 0 }))
   const maxVal = Math.max(1, ...points.flatMap(p => [p.exp, p.act]))
   const xStep = points.length > 1 ? (width - 2 * padding) / (points.length - 1) : 0
@@ -49,29 +48,23 @@ function MiniTrend({ hourly }) {
         onMouseLeave={() => setHover(null)}
       >
         <rect x="0" y="0" width={width} height={height} fill="white" />
-        {/* Grid lines */}
         {[0.25, 0.5, 0.75].map((g, idx) => (
           <line key={idx} x1={padding} x2={width - padding} y1={padding + g * (height - 2 * padding)} y2={padding + g * (height - 2 * padding)} stroke="#eee" strokeWidth="1" />
         ))}
-        {/* Expected */}
         <path d={expectedPath} fill="none" stroke="#fb923c" strokeWidth="2" />
-        {/* Actual */}
         <path d={actualPath} fill="none" stroke="#ef4444" strokeWidth="2.5" />
-        {/* Points */}
         {points.map(p => (
           <>
             <circle key={`e-${p.i}`} cx={x(p.i)} cy={y(p.exp)} r="2" fill="#fb923c" />
             <circle key={`a-${p.i}`} cx={x(p.i)} cy={y(p.act)} r="2.5" fill="#ef4444" />
           </>
         ))}
-        {/* Hover guide */}
         {hover ? (
           <g>
             <line x1={hover.x} x2={hover.x} y1={padding} y2={height - padding} stroke="#ddd" strokeDasharray="4 4" />
           </g>
         ) : null}
       </svg>
-      {/* Tooltip */}
       {hover ? (
         <div
           className="absolute bg-white border rounded shadow px-2 py-1 text-xs pointer-events-none"
@@ -96,19 +89,9 @@ export default function Simulation() {
   const [selectedTemple, setSelectedTemple] = useState(null)
   const [data, setData] = useState(null)
   const [templeDetails, setTempleDetails] = useState(null)
-  // Date is internal-only. Use today's date; UI date picker removed.
   const [selectedDate] = useState(() => new Date().toISOString().split('T')[0])
-  const [showAllRules, setShowAllRules] = useState(false)
-  const [showAllFacilities, setShowAllFacilities] = useState(false)
-  const [imgIndex, setImgIndex] = useState(0)
   const [facilityFilters, setFacilityFilters] = useState({})
-  // Map layer toggles
-  const [showAreas, setShowAreas] = useState(true)
-  const [showFacilities, setShowFacilities] = useState(true)
-  const [showTempleMarker, setShowTempleMarker] = useState(true)
-  // Waiting time estimate
   const [waitEstimate, setWaitEstimate] = useState(null)
-  // Search state for temples
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState([])
 
@@ -141,10 +124,8 @@ export default function Simulation() {
     if (!selectedTemple) return
     let cancelled = false
     const fetchData = () => {
-      // Always pass ISO format to backend
       const isoDate = (() => {
         try {
-          // selectedDate is expected to be YYYY-MM-DD; new Date handles it
           const d = new Date(selectedDate)
           if (!isNaN(d)) return d.toISOString().split('T')[0]
         } catch (_) {}
@@ -159,13 +140,9 @@ export default function Simulation() {
     return () => { cancelled = true; clearInterval(id) }
   }, [selectedTemple, selectedDate])
 
-  // Removed SSE dependency; polling above keeps data relatively fresh.
-
-  // Fetch full temple details when selection changes (description, timings, rules, contacts, facilities)
   useEffect(() => {
     if (!selectedTemple) { setTempleDetails(null); return }
     let cancelled = false
-    // Persist selected temple
     localStorage.setItem('sim_selectedTempleId', selectedTemple._id)
     getTempleDetails(selectedTemple._id).then(res => {
       if (!cancelled) setTempleDetails(res)
@@ -173,9 +150,6 @@ export default function Simulation() {
     return () => { cancelled = true }
   }, [selectedTemple])
 
-  // No date persistence; always use today
-
-  // Compute or fetch waiting time when data updates
   useEffect(() => {
     if (!data) { setWaitEstimate(null); return }
     const current = data.currentStatus || {}
@@ -193,34 +167,32 @@ export default function Simulation() {
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto space-y-4 animate-slide-up">
+      <div className="max-w-7xl mx-auto space-y-4 animate-slide-up p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-xl font-semibold">Simulation & Visualization</div>
+          <div className="text-2xl font-semibold text-gray-800">Simulation & Visualization</div>
           <div className="flex items-center gap-2 relative">
-            {/* Temple search */}
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder={t('search_temples')}
-                className="p-2 rounded-lg border border-white/50 bg-white/40 backdrop-blur focus:outline-none focus:ring-2 focus:ring-[color:var(--india-saffron)] ind-trans"
+                className="p-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={searchTerm}
                 onChange={(e)=> setSearchTerm(e.target.value)}
                 onKeyDown={(e)=> { if (e.key === 'Enter') performTempleSearch() }}
               />
               <button
                 type="button"
-                className="px-3 py-2 rounded-lg bg-[color:var(--india-saffron)] text-white hover:opacity-90 ind-trans"
+                className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors"
                 onClick={performTempleSearch}
                 aria-label="Search temples"
               >
                 {t('search')}
               </button>
             </div>
-            <select className="p-2 rounded-lg border border-white/50 bg-white/40 backdrop-blur focus:outline-none focus:ring-2 focus:ring-[color:var(--india-saffron)] ind-trans" value={selectedTemple?._id||''} onChange={e=>setSelectedTemple(temples.find(t=>t._id===e.target.value))}>
+            <select className="p-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" value={selectedTemple?._id||''} onChange={e=>setSelectedTemple(temples.find(t=>t._id===e.target.value))}>
               <option value="">Select Temple</option>
               {temples.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
             </select>
-            {/* Results dropdown */}
             {searchResults && searchResults.length > 0 ? (
               <div className="absolute right-0 top-full mt-1 w-72 max-w-[80vw] z-10 bg-white border rounded-lg shadow-lg overflow-hidden">
                 <ul className="max-h-64 overflow-auto">
@@ -242,86 +214,39 @@ export default function Simulation() {
           </div>
         </div>
 
-        {/* Temple Information Panel */}
         {selectedTemple ? (
-          <div className="glass-card ind-gradient-border p-4 grid md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <div className="font-semibold mb-1">{selectedTemple.name}</div>
-              <div className="text-sm text-gray-600">
-                {selectedTemple.location?.city}, {selectedTemple.location?.state}
-              </div>
+          <div className="bg-white rounded-xl shadow-lg p-6 grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-4">
+              <h2 className="text-xl font-bold text-gray-800">{selectedTemple.name}</h2>
+              <p className="text-sm text-gray-600">{selectedTemple.location?.city}, {selectedTemple.location?.state}</p>
               {(() => {
                 const url = templeDetails?.externalSources?.websiteUrl || selectedTemple?.externalSources?.websiteUrl
                 return url ? (
-                  <div className="mt-1 text-sm">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-saffron-700 hover:underline"
-                    >
-                      Official Website
-                    </a>
-                  </div>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline font-semibold text-sm">
+                    Official Website
+                  </a>
                 ) : null
               })()}
-              {/* Image carousel */}
-              {templeDetails?.images?.length ? (
-                <div className="mt-3">
-                  <div className="relative w-full h-48 md:h-56 rounded-xl overflow-hidden border ind-gradient-border glass-card">
-                    {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
-                    <img
-                      src={templeDetails.images[imgIndex]?.url}
-                      alt={templeDetails.images[imgIndex]?.caption || 'Temple image'}
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      className="absolute left-2 top-1/2 -translate-y-1/2 glass-btn w-8 h-8 rounded-full"
-                      onClick={() => setImgIndex((prev) => (prev - 1 + templeDetails.images.length) % templeDetails.images.length)}
-                      aria-label="Previous image"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 glass-btn w-8 h-8 rounded-full"
-                      onClick={() => setImgIndex((prev) => (prev + 1) % templeDetails.images.length)}
-                      aria-label="Next image"
-                    >
-                      ›
-                    </button>
-                    {templeDetails.images[imgIndex]?.caption ? (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1">
-                        {templeDetails.images[imgIndex]?.caption}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-              {templeDetails?.description ? (
-                <p className="mt-2 text-gray-700 text-sm">{templeDetails.description}</p>
-              ) : null}
-              {/* Navigation assistance */}
+              <p className="text-sm text-gray-700">{templeDetails?.description}</p>
               {data?.temple?.location?.coordinates ? (
-                <div className="mt-2 flex items-center gap-2 text-sm">
-                  <a
-                    className="glass-btn px-3 py-1.5"
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${data.temple.location.coordinates.latitude},${data.temple.location.coordinates.longitude}`}
-                    target="_blank" rel="noopener noreferrer"
-                  >Navigate to Temple</a>
-                </div>
+                <a
+                  className="inline-block bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${data.temple.location.coordinates.latitude},${data.temple.location.coordinates.longitude}`}
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  Navigate to Temple
+                </a>
               ) : null}
-              {/* Facility filters */}
+              
               {templeDetails?.facilities?.length ? (
-                <div className="mt-3">
-                  <div className="font-medium text-sm mb-1">Filter Facilities</div>
+                <div>
+                  <h3 className="font-semibold text-md mb-2">Filter Facilities</h3>
                   <div className="flex flex-wrap gap-2">
                     {Array.from(new Set(templeDetails.facilities.map(f=>f.type||'other'))).map((type)=>{
                       const checked = facilityFilters[type] ?? true
                       return (
-                        <label key={type} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-white/50 bg-white/40 backdrop-blur ind-trans">
-                          <input type="checkbox" checked={checked} onChange={e=>setFacilityFilters(prev=>({ ...prev, [type]: e.target.checked }))} />
+                        <label key={type} className="inline-flex items-center gap-2 text-sm">
+                          <input type="checkbox" className="form-checkbox h-4 w-4 text-orange-600" checked={checked} onChange={e=>setFacilityFilters(prev=>({ ...prev, [type]: e.target.checked }))} />
                           <span className="capitalize">{type}</span>
                         </label>
                       )
@@ -329,70 +254,56 @@ export default function Simulation() {
                   </div>
                 </div>
               ) : null}
+
               {templeDetails?.rules?.length ? (
-                <div className="mt-3">
-                  <div className="font-medium text-sm mb-1">Visitor Guidelines</div>
-                  <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
-                    {(showAllRules ? templeDetails.rules : templeDetails.rules.slice(0,5)).map((r,i)=>(<li key={i}>{r}</li>))}
+                <div>
+                  <h3 className="font-semibold text-md mb-2">Visitor Guidelines</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    {templeDetails.rules.map((r,i)=>(<li key={i}>{r}</li>))}
                   </ul>
-                  {templeDetails.rules.length > 5 ? (
-                    <button
-                      type="button"
-                      className="mt-2 text-saffron-700 hover:underline text-sm"
-                      onClick={() => setShowAllRules(v=>!v)}
-                    >
-                      {showAllRules ? 'Show less' : 'Show more'}
-                    </button>
-                  ) : null}
                 </div>
               ) : null}
             </div>
-            <div className="space-y-2 text-sm text-gray-700 md:sticky md:top-4 self-start">
-              <div>
-                <div className="font-medium">Timings</div>
-                <div>Open: {templeDetails?.timings?.openTime || selectedTemple.timings?.openTime || '-'}</div>
-                <div>Close: {templeDetails?.timings?.closeTime || selectedTemple.timings?.closeTime || '-'}</div>
-                <div>Slot: {templeDetails?.timings?.slotDuration || selectedTemple.timings?.slotDuration || 30} mins</div>
-              </div>
-              <div>
-                <div className="font-medium">Capacity</div>
-                <div>Per Slot: {templeDetails?.capacity?.maxVisitorsPerSlot || selectedTemple.capacity?.maxVisitorsPerSlot || 0}</div>
-                <div>Daily: {templeDetails?.capacity?.totalDailyCapacity || selectedTemple.capacity?.totalDailyCapacity || 0}</div>
-              </div>
-              {templeDetails?.emergencyContacts?.length ? (
+            
+            <div className="md:col-span-2 bg-green-50 rounded-lg p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <div className="font-medium">Emergency Contacts</div>
-                  <ul className="list-disc ml-5">
-                    {templeDetails.emergencyContacts.slice(0,2).map((c,i)=>(
-                      <li key={i}>{c.name}: {c.phone}</li>
-                    ))}
-                  </ul>
+                  <h4 className="font-semibold text-gray-700">Timings</h4>
+                  <p className="text-sm">Open: {templeDetails?.timings?.openTime || '-'}</p>
+                  <p className="text-sm">Close: {templeDetails?.timings?.closeTime || '-'}</p>
+                  <p className="text-sm">Slot: {templeDetails?.timings?.slotDuration || 30} mins</p>
                 </div>
-              ) : null}
-              {templeDetails?.facilities?.length ? (
                 <div>
-                  <div className="font-medium">Facilities</div>
-                  <div className="flex flex-wrap gap-2">
-                    {(showAllFacilities ? templeDetails.facilities : templeDetails.facilities.slice(0,6)).map((f,i)=>(
-                      <span key={i} className="px-2 py-0.5 rounded-lg border border-white/50 bg-white/40 backdrop-blur text-saffron-700 text-xs">
-                        {f.type || f.name}
-                      </span>
-                    ))}
+                  <h4 className="font-semibold text-gray-700">Capacity</h4>
+                  <p className="text-sm">Per Slot: {templeDetails?.capacity?.maxVisitorsPerSlot || 0}</p>
+                  <p className="text-sm">Daily: {templeDetails?.capacity?.totalDailyCapacity || 0}</p>
+                </div>
+                {templeDetails?.emergencyContacts?.length ? (
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Emergency Contacts</h4>
+                    <ul className="list-disc list-inside text-sm">
+                      {templeDetails.emergencyContacts.map((c,i)=>(
+                        <li key={i}>{c.name}: {c.phone}</li>
+                      ))}
+                    </ul>
                   </div>
-                  {templeDetails.facilities.length > 6 ? (
-                    <button
-                      type="button"
-                      className="mt-2 text-saffron-700 hover:underline text-sm"
-                      onClick={() => setShowAllFacilities(v=>!v)}
-                    >
-                      {showAllFacilities ? 'Show less' : 'Show more'}
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-              {/* Realtime panel */}
-              <div className="mt-3">
-                <div className="font-medium mb-1">Realtime Updates</div>
+                ) : null}
+                {templeDetails?.facilities?.length ? (
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Facilities</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {templeDetails.facilities.map((f,i)=>(
+                        <span key={i} className="px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-medium">
+                          {f.type || f.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              
+              <div className="pt-4 border-t border-green-200">
+                <h4 className="font-semibold text-gray-700 mb-2">Realtime Updates</h4>
                 <TempleRealtimePanel templeId={selectedTemple?._id} />
               </div>
             </div>
@@ -400,129 +311,32 @@ export default function Simulation() {
         ) : null}
 
         {data ? (
-          <div className="space-y-4">
-            {/* Key stats */}
-            <div className="grid md:grid-cols-4 gap-4">
-              {(() => {
-                const current = data.currentStatus || {}
-                const capacity = data.temple?.capacity?.maxVisitorsPerSlot || 0
-                const expected = current.expectedVisitors ?? 0
-                const actual = current.actualVisitors ?? 0
-                const occ = capacity ? Math.min(100, Math.round((actual / capacity) * 100)) : 0
-                const critical = (data.areas||[]).filter(a=>a.density==='critical').length
-                const high = (data.areas||[]).filter(a=>a.density==='high').length
-                const facilitiesCount = (data.facilities||[]).length
-                return (
-                  <>
-                    <div className="glass-card ind-gradient-border p-4">
-                      <div className="text-sm text-gray-600">Expected Visitors</div>
-                      <div className="text-2xl font-semibold">{expected}</div>
-                    </div>
-                    <div className="glass-card ind-gradient-border p-4">
-                      <div className="text-sm text-gray-600">Actual Visitors</div>
-                      <div className="text-2xl font-semibold">{actual}</div>
-                    </div>
-                    <div className="glass-card ind-gradient-border p-4">
-                      <div className="text-sm text-gray-600 mb-1">Occupancy</div>
-                      <CrowdProgress percentage={occ} />
-                    </div>
-                    <div className="glass-card ind-gradient-border p-4">
-                      <div className="text-sm text-gray-600">Hotspots</div>
-                      <div className="text-2xl font-semibold">{critical} <span className="text-sm font-normal text-gray-500">critical</span> / {high} <span className="text-sm font-normal text-gray-500">high</span></div>
-                    </div>
-                    <div className="glass-card ind-gradient-border p-4">
-                      <div className="text-sm text-gray-600">Waiting Time (est.)</div>
-                      <div className="text-2xl font-semibold">{waitEstimate?.minutes != null ? `${waitEstimate.minutes} min` : '-'}</div>
-                      <div className="text-xs text-gray-500">Level: {waitEstimate?.level || '-'}</div>
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-
-            {/* Weather and Trend */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="glass-card ind-gradient-border p-4">
-                <div className="font-semibold mb-1">Weather Impact</div>
-                <div className="text-sm text-gray-700">Condition: {data.weatherImpact?.condition || '-'}</div>
-                <div className="text-sm text-gray-700">Temperature: {data.weatherImpact?.temperature ?? '-'}°C</div>
-                <div className="text-sm text-gray-700">Impact: {data.weatherImpact?.impactLevel || 'none'}</div>
+          <div className="grid md:grid-cols-5 gap-4">
+            <div className="md:col-span-5 grid md:grid-cols-5 gap-4">
+              <StatCard title="Expected Visitors" value={data.currentStatus?.expectedVisitors ?? 0} />
+              <StatCard title="Actual Visitors" value={data.currentStatus?.actualVisitors ?? 0} />
+              <div className="bg-green-50 rounded-lg p-4 shadow">
+                <h5 className="text-sm text-gray-600 mb-1">Occupancy</h5>
+                <CrowdProgress percentage={
+                  data.temple?.capacity?.maxVisitorsPerSlot ? 
+                  Math.min(100, Math.round(((data.currentStatus?.actualVisitors ?? 0) / data.temple.capacity.maxVisitorsPerSlot) * 100)) : 0
+                } />
               </div>
-              <div className="md:col-span-2 glass-card ind-gradient-border p-4">
-                <div className="font-semibold mb-2">Hourly Trend (Minimal)</div>
-                <MiniTrend hourly={data.hourlyData||[]} />
-              </div>
+              <StatCard title="Hotspots" value={`${(data.areas||[]).filter(a=>a.density==='critical').length} critical / ${(data.areas||[]).filter(a=>a.density==='high').length} high`} />
+              <StatCard title="Waiting Time (est.)" value={waitEstimate?.minutes != null ? `${waitEstimate.minutes} min` : '-'} level={waitEstimate?.level} />
+            </div>
+            
+            <div className="md:col-span-3 bg-white rounded-lg p-4 shadow">
+              <h3 className="font-semibold mb-2">Hourly Trend (Minimal)</h3>
+              <MiniTrend hourly={data.hourlyData||[]} />
             </div>
 
-            {/* Density legend */}
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="font-medium">Legend:</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-green-500 inline-block"></span> Low</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-yellow-500 inline-block"></span> Medium</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-600 inline-block"></span> High</span>
-              <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-red-800 inline-block"></span> Critical</span>
-              {/* Layer toggles */}
-              <span className="ml-auto inline-flex items-center gap-2">
-                <label className="inline-flex items-center gap-1"><input type="checkbox" checked={showAreas} onChange={e=>setShowAreas(e.target.checked)} /> Crowd overlay</label>
-                <label className="inline-flex items-center gap-1"><input type="checkbox" checked={showFacilities} onChange={e=>setShowFacilities(e.target.checked)} /> Facilities</label>
-                <label className="inline-flex items-center gap-1"><input type="checkbox" checked={showTempleMarker} onChange={e=>setShowTempleMarker(e.target.checked)} /> Temple marker</label>
-              </span>
+            <div className="md:col-span-2 bg-white rounded-lg p-4 shadow">
+              <h3 className="font-semibold mb-2">Weather Impact</h3>
+              <p className="text-sm">Condition: {data.weatherImpact?.condition || '-'}</p>
+              <p className="text-sm">Temperature: {data.weatherImpact?.temperature ?? '-'}°C</p>
+              <p className="text-sm">Impact: {data.weatherImpact?.impactLevel || 'none'}</p>
             </div>
-
-            {/* Map */}
-            {(() => {
-              const enabledTypes = facilityFilters && Object.keys(facilityFilters).length
-                ? Object.entries(facilityFilters).filter(([,v])=>v).map(([k])=>k)
-                : Array.from(new Set((templeDetails?.facilities||[]).map(f=>f.type||'other')))
-              const filteredFacilities = (data.facilities||[]).filter(f => enabledTypes.includes(f.type||'other'))
-              return (
-                <HeatmapMap
-                  center={data.temple.location.coordinates}
-                  areas={data.areas}
-                  facilities={filteredFacilities}
-                  showAreas={showAreas}
-                  showFacilities={showFacilities}
-                  showTempleMarker={showTempleMarker}
-                  templeName={selectedTemple?.name}
-                />
-              )
-            })()}
-
-            {/* Top busy areas */}
-            <div className="glass-card ind-gradient-border p-4">
-              <div className="font-semibold mb-2">Busiest Areas</div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-600">
-                      <th className="py-2 pr-4">Area</th>
-                      <th className="py-2 pr-4">Occupancy</th>
-                      <th className="py-2 pr-4">Capacity</th>
-                      <th className="py-2 pr-4">% Filled</th>
-                      <th className="py-2 pr-4">Density</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.areas||[])
-                      .slice()
-                      .sort((a,b)=>(b.occupancyPercentage||0)-(a.occupancyPercentage||0))
-                      .slice(0,8)
-                      .map((a,i)=>(
-                        <tr key={i} className="border-t">
-                          <td className="py-2 pr-4">{a.name}</td>
-                          <td className="py-2 pr-4">{a.occupancy}</td>
-                          <td className="py-2 pr-4">{a.capacity}</td>
-                          <td className="py-2 pr-4">{a.occupancyPercentage}%</td>
-                          <td className="py-2 pr-4 capitalize">{a.density}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Alerts */}
-            <AlertsBanner alerts={data.alerts} />
           </div>
         ) : selectedTemple ? (
           <div className="space-y-4">
@@ -532,5 +346,15 @@ export default function Simulation() {
         ) : null}
       </div>
     </Layout>
+  )
+}
+
+function StatCard({ title, value, level }) {
+  return (
+    <div className="bg-green-50 rounded-lg p-4 shadow">
+      <h5 className="text-sm text-gray-600">{title}</h5>
+      <div className="text-3xl font-bold text-gray-800">{value}</div>
+      {level && <div className="text-xs text-gray-500 mt-1">Level: {level}</div>}
+    </div>
   )
 }
