@@ -56,15 +56,30 @@ export const templesApi = {
 export async function getTempleRealtime(id) {
   // Mock realtime data for now
   console.warn('Realtime temple data not yet implemented in Supabase version')
+  // Simulate a network delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const crowdLevels = ['low', 'medium', 'high'];
+  const slotStatuses = ['available', 'limited', 'full'];
+
   return {
     success: true,
     data: {
       temple_id: id,
-      current_occupancy: 0,
-      occupancy_percentage: 0,
-      crowd_level: 'low',
-      estimated_wait_time: 0,
-      last_updated: new Date().toISOString()
+      crowd: {
+        crowdLevel: crowdLevels[Math.floor(Math.random() * crowdLevels.length)],
+        isOpen: Math.random() > 0.2, // 80% chance of being open
+      },
+      slotAvailability: {
+        status: slotStatuses[Math.floor(Math.random() * slotStatuses.length)],
+        remaining: Math.floor(Math.random() * 2000),
+      },
+      darshanTimings: {
+        openTime: '06:00',
+        closeTime: '22:00',
+      },
+      notices: Math.random() > 0.5 ? [{ title: 'Special puja today at 8 PM' }] : [],
+      fetchedAt: new Date().toISOString(),
     }
   }
 }

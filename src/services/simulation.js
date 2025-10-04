@@ -22,7 +22,13 @@ export function mapTemple(row) {
 
 export async function getTemplesList() {
   const { data, error } = await supabase.from('temples').select('*').order('name', { ascending: true })
-  if (error) throw error
+  if (error) {
+    console.warn("Failed to fetch temples, using mock data. Error:", error.message);
+    return [
+      { id: 'mock-1', name: 'Mock Temple 1', location: { city: 'Mock City', state: 'Mock State' } },
+      { id: 'mock-2', name: 'Mock Temple 2', location: { city: 'Mock City', state: 'Mock State' } },
+    ].map(mapTemple);
+  }
   return (data || []).map(mapTemple)
 }
 
