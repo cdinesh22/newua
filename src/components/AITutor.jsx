@@ -23,47 +23,102 @@ export default function AITutor({ templeId, lang }) {
     }
   }, [open, messages])
 
-  function localAnswer(question) {
-    const q = question.toLowerCase()
-    // Very lightweight intent rules
-    if (q.includes('book') || q.includes('darshan')) {
-      return 'To book a slot, go to the Book page and choose your temple. We link to official portals when available.'
-    }
-    if (q.includes('time') || q.includes('timing') || q.includes('open')) {
-      return 'Temples list their Open/Close and Slot duration in the temple details panel on Simulation and Book pages.'
-    }
-    if (q.includes('wait') || q.includes('queue') || q.includes('crowd')) {
-      return 'The waiting time is estimated from current visitors and capacity. Check Simulation for live trends and heatmap.'
-    }
-    if (q.includes('map') || q.includes('heatmap')) {
-      return 'Use the Simulation page to view the live heatmap, areas, and facilities. You can toggle layers in the legend.'
-    }
-    if (q.includes('language') || q.includes('hindi') || q.includes('english')) {
-      return 'Use the language selector in the header to switch languages across the site.'
-    }
-    if (q.includes('contact') || q.includes('help')) {
-      return 'Use the Contact page to send us a message. For emergencies, please use the temple\'s listed contacts.'
-    }
-    return 'I\'m here to help with bookings, timings, waiting time, and navigation tips. Try asking about "booking", "waiting time", or "heatmap".'
-  }
-
   async function ask(question) {
     if (!question?.trim()) return
 
     // Push user message
     setMessages(prev => [...prev, { role: 'user', text: question }, { role: 'assistant', text: '' }])
     setBusy(true)
-    // Local instant response (no backend)
-    const answer = localAnswer(question)
-    setMessages(prev => {
-      const clone = [...prev]
-      const lastIdx = clone.length - 1
-      if (lastIdx >= 0 && clone[lastIdx].role === 'assistant') {
-        clone[lastIdx] = { role: 'assistant', text: answer }
+
+    try {
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question,
+          templeId,
+          lang,
+          messages: messages.slice(-5) // Pass last 5 messages for context
+        })
+      })
+
+      if (!res.ok) {
+        const errorBody = await res.text()
+        console.error('Assistant API error:', res.status, errorBody)
+        setMessages(prev => {
+          const clone = [...prev]
+          const last = clone[clone.length - 1]
+          if (last.role === 'assistant') {
+            last.text = 'Sorry, I am unable to answer right now.'
+          }
+          return clone
+        })
+        return
       }
-      return clone
-    })
-    setBusy(false)
+
+      // SSE Streaming
+      if (res.headers.get('content-type')?.includes('text/event-stream')) {
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let done = false
+        while (!done) {
+          const { value, done: readerDone } = await reader.read()
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true })
+            const lines = chunk.split('\n\n')
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.substring(6)
+                if (data === '[DONE]') {
+                  done = true
+                  break
+                }
+                try {
+                  const json = JSON.parse(data)
+                  if (json.choices?.[0]?.delta?.content) {
+                    const content = json.choices[0].delta.content
+                    setMessages(prev => {
+                      const clone = [...prev]
+                      const last = clone[clone.length - 1]
+                      if (last.role === 'assistant') {
+                        last.text += content
+                      }
+                      return clone
+                    })
+                  }
+                } catch (e) {
+                  console.error('Error parsing SSE chunk:', e)
+                }
+              }
+            }
+          }
+          done = readerDone
+        }
+      } else {
+        // Fallback to simple POST
+        const data = await res.json()
+        setMessages(prev => {
+          const clone = [...prev]
+          const last = clone[clone.length - 1]
+          if (last.role === 'assistant') {
+            last.text = data.answer
+          }
+          return clone
+        })
+      }
+    } catch (err) {
+      console.error('Error calling assistant API', err)
+      setMessages(prev => {
+        const clone = [...prev]
+        const last = clone[clone.length - 1]
+        if (last.role === 'assistant') {
+          last.text = 'My apologies, I am having trouble connecting.'
+        }
+        return clone
+      })
+    } finally {
+      setBusy(false)
+    }
   }
 
   function onSubmit(e) {

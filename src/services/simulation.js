@@ -24,10 +24,23 @@ export async function getTemplesList() {
   const { data, error } = await supabase.from('temples').select('*').order('name', { ascending: true })
   if (error) {
     console.warn("Failed to fetch temples, using mock data. Error:", error.message);
-    return [
-      { id: 'mock-1', name: 'Mock Temple 1', location: { city: 'Mock City', state: 'Mock State' } },
-      { id: 'mock-2', name: 'Mock Temple 2', location: { city: 'Mock City', state: 'Mock State' } },
-    ].map(mapTemple);
+    const mockTemples = [
+      { id: 'akshardham-d', name: 'Akshardham Temple (Delhi)', location: { city: 'Delhi', state: 'Delhi' } },
+      { id: 'somnath', name: 'Somnath Temple', location: { city: 'Prabhas Patan', state: 'Gujarat' } },
+      { id: 'dwarka', name: 'Dwarkadhish Temple', location: { city: 'Dwarka', state: 'Gujarat' } },
+      { id: 'ambaji', name: 'Ambaji Temple', location: { city: 'Ambaji', state: 'Gujarat' } },
+      { id: 'pavagadh', name: 'Pavagadh Mahakali Temple', location: { city: 'Pavagadh', state: 'Gujarat' } },
+      { id: 'kashi', name: 'Kashi Vishwanath Temple', location: { city: 'Varanasi', state: 'Uttar Pradesh' } },
+      { id: 'ttd', name: 'Tirumala Tirupati (TTD)', location: { city: 'Tirupati', state: 'Andhra Pradesh' } },
+      { id: 'shirdi', name: 'Shirdi Sai Baba Temple', location: { city: 'Shirdi', state: 'Maharashtra' } },
+      { id: 'vaishno', name: 'Vaishno Devi Shrine', location: { city: 'Katra', state: 'Jammu and Kashmir' } },
+      { id: 'jagannath', name: 'Jagannath Temple (Puri)', location: { city: 'Puri', state: 'Odisha' } },
+      { id: 'golden', name: 'Golden Temple (Amritsar)', location: { city: 'Amritsar', state: 'Punjab' } },
+      { id: 'siddhi', name: 'Siddhivinayak (Mumbai)', location: { city: 'Mumbai', state: 'Maharashtra' } },
+      { id: 'meenakshi', name: 'Meenakshi Amman (Madurai)', location: { city: 'Madurai', state: 'Tamil Nadu' } },
+      { id: 'kamakhya', name: 'Kamakhya Temple (Assam)', location: { city: 'Guwahati', state: 'Assam' } },
+    ];
+    return mockTemples.map(mapTemple);
   }
   return (data || []).map(mapTemple)
 }
